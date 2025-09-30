@@ -95,7 +95,7 @@ with.
 [Codespaces](https://github.com/features/codespaces) is a remote development
 environment that allows one-click configuration of your development environment.
 
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/temporal-sa/hackathon-starter)
+[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/aaaaabiang/hackathon1001)
 
 ### Dev Containers
 
@@ -108,7 +108,7 @@ environment that allows one-click configuration of your development environment.
 1. Install the [Dev Containers extension](https://marketplace.visualstudio.com/items?itemName=ms-vscode-remote.remote-containers)
 1. Either:
     * Clone this repo and open in VSCode, or
-    * [Open in Dev Containers](http://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/temporal-sa/hackathon-starter)
+    * [Open in Dev Containers](http://vscode.dev/redirect?url=vscode://ms-vscode-remote.remote-containers/cloneInVolume?url=https://github.com/aaaaabiang/hackathon1001)
 
 ### Docker Compose
 
@@ -134,7 +134,7 @@ environment that allows one-click configuration of your development environment.
 [Gitpod](https://www.gitpod.io) is a remote development environment that allows
 one-click configuration of your development environment.
 
-[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/temporal-sa/hackathon-starter)
+[![Open in Gitpod](https://gitpod.io/button/open-in-gitpod.svg)](https://gitpod.io/#https://github.com/aaaaabiang/hackathon1001)
 
 ### Local development
 
