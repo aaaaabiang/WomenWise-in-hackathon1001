@@ -90,6 +90,42 @@
       border-radius: 8px;
       border: 1px solid #e2e8f0;
     }
+    details.code-block {
+      margin-top: 8px;
+      border: 1px solid #cbd5f5;
+      border-radius: 6px;
+      background: #fff;
+      overflow: hidden;
+    }
+    details.code-block summary {
+      cursor: pointer;
+      padding: 8px 12px;
+      font-weight: 600;
+      list-style: none;
+    }
+    details.code-block[open] summary {
+      border-bottom: 1px solid #cbd5f5;
+    }
+    details.code-block summary::-webkit-details-marker {
+      display: none;
+    }
+    details.code-block summary::after {
+      content: '\25BC';
+      float: right;
+      transition: transform 0.2s ease;
+    }
+    details.code-block[open] summary::after {
+      transform: rotate(-180deg);
+    }
+    details.code-block pre {
+      margin: 0;
+      border-radius: 0;
+    }
+    details.code-block pre code {
+      display: block;
+      max-height: 320px;
+      overflow-y: auto;
+    }
     .empty-state {
       text-align: center;
       color: #64748b;
@@ -110,34 +146,32 @@
       margin-top: 8px;
     }
     .review-layout {
-      display: flex;
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(260px, 1.4fr);
       gap: 20px;
-      align-items: stretch;
-    }
-    .review-layout section {
-      margin-bottom: 0;
-      flex: 1;
+      align-items: flex-start;
     }
     .history-section {
-      flex: 1.15;
       display: flex;
       flex-direction: column;
+      min-height: 0;
     }
     #attempts {
       margin-top: 12px;
       overflow-y: auto;
-      max-height: calc(100vh - 260px);
+      max-height: calc(100vh - 280px);
       padding-right: 6px;
+      min-height: 200px;
     }
     .human-section {
-      flex: 0.85;
+      position: sticky;
+      top: 32px;
+      align-self: start;
     }
     @media (max-width: 900px) {
       .review-layout {
+        display: flex;
         flex-direction: column;
-      }
-      .review-layout section {
-        margin-bottom: 20px;
       }
       #attempts {
         max-height: none;
@@ -150,6 +184,9 @@
       .status-card { background: #1e3a8a; border-color: #312e81; color: #f1f5f9; }
       .round { background: #111827; border-color: #1f2937; }
       pre { background: #111827; color: #e2e8f0; }
+      details.code-block { background: #111827; border-color: #334155; }
+      details.code-block[open] summary { border-color: #334155; }
+      details.code-block pre code { max-height: 320px; }
     }
   </style>
 </head>
@@ -270,8 +307,10 @@
       const rounds = attempt.rounds.map(round => `
         <div class="round">
           <p><strong>Round ${round.round}</strong></p>
-          <p>Agent A Code:</p>
-          <pre><code>${escapeHtml(round.code)}</code></pre>
+          <details class="code-block">
+            <summary>Agent A Code</summary>
+            <pre><code>${escapeHtml(round.code)}</code></pre>
+          </details>
           ${round.review ? `<p><strong>Agent B Review:</strong> ${round.review.approved ? 'Approved ✅' : 'Rejected ❌'}</p>
             ${round.review.reasons ? `<p>Reasons: ${escapeHtml(round.review.reasons)}</p>` : ''}
             ${round.review.suggestions ? `<p>Suggestions: ${escapeHtml(round.review.suggestions)}</p>` : ''}` : ''}
