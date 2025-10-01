@@ -1,9 +1,13 @@
 // src/activities.ts
+import { createRequire, builtinModules } from 'node:module';
 import type {
   AgentAGenerateInput, AgentAOutput,
   AgentBReviewInput, AgentBReview,
   AgentCExecInput, AgentCExecResult
 } from './types.js';
+
+const nativeRequire = createRequire(import.meta.url);
+const ALLOWED_MODULES = new Set<string>([...builtinModules, ...builtinModules.map(m => `node:${m}`)]);
 
 /** ============ OpenRouter 基础封装 ============ */
 const OPENROUTER_URL = 'https://openrouter.ai/api/v1/chat/completions';
@@ -50,7 +54,8 @@ Specs:
 - CommonJS module.
 - Export a function \`solve(input)\`.
 - Also export \`sampleTests\`: Array<{ input: any, expected: any }> with 6-10 diverse cases.
-- No external deps. Pure JS. Keep code self-contained.`;
+- No external deps. Pure JS. Keep code self-contained.
+- Do NOT reference test helpers like expect()/describe()/it()/test(). sampleTests must be plain data.`;
 
   const user = [
     `Task: ${input.task}`,
@@ -91,6 +96,7 @@ ${'```'}
 Evaluate correctness (edge cases), clarity, and safety. 
 If the code is suitable for execution as-is, set "approved": true and briefly justify in "reasons".
 If not, set "approved": false and put concrete fix steps in "suggestions". 
+Ensure the solution does not rely on test frameworks (no expect()/describe()/it()/test()) and that sampleTests is pure data.
 Return ONLY the JSON object, no extra text.`;
 
   const raw = await callOpenRouterChat(
@@ -130,8 +136,18 @@ export async function agentCExecute(input: AgentCExecInput): Promise<AgentCExecR
     // Demo 执行：生产建议用 VM/Docker 沙箱
     const module = { exports: {} as any };
     const exports = module.exports;
-    const fn = new Function('module', 'exports', `${input.code}; return module.exports;`);
-    const mod = fn(module, exports);
+    const sandboxRequire = (specifier: string) => {
+      if (specifier.startsWith('.') || specifier.startsWith('/')) {
+        throw new Error(`Relative require not allowed: ${specifier}`);
+      }
+      if (!ALLOWED_MODULES.has(specifier)) {
+        throw new Error(`Module not allowed in sandbox: ${specifier}`);
+      }
+      return nativeRequire(specifier);
+    };
+    (sandboxRequire as any).resolve = nativeRequire.resolve.bind(nativeRequire);
+    const fn = new Function('module', 'exports', 'require', `${input.code}; return module.exports;`);
+    const mod = fn(module, exports, sandboxRequire);
 
     if (typeof mod.solve !== 'function') {
       return { success: false, error: 'Missing export: solve(input)' };
