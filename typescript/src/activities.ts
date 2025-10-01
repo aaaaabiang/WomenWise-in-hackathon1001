@@ -43,32 +43,39 @@ async function callOpenRouterChat(
 }
 
 /** ============ Agent A：生成代码（接 LLM） ============ */
+// 替换原有 agentAGenerate
 export async function agentAGenerate(input: AgentAGenerateInput): Promise<AgentAOutput> {
-  const system = `You are a helpful senior software engineer. Always return ONLY runnable code block without explanations unless asked. Language: JavaScript (Node). Export the main function(s) via CommonJS 'module.exports'.`;
+  const system = `You are a senior engineer. Return ONLY a runnable JavaScript code block.
+Specs:
+- CommonJS module.
+- Export a function \`solve(input)\`.
+- Also export \`sampleTests\`: Array<{ input: any, expected: any }> with 6-10 diverse cases.
+- No external deps. Pure JS. Keep code self-contained.`;
+
   const user = [
     `Task: ${input.task}`,
     input.feedback ? `Incorporate feedback: ${input.feedback}` : '',
-    `Constraints:`,
-    `- Use plain JS (no external deps).`,
-    `- Export functions with: module.exports = { ... }`,
-    `- Keep it self-contained.`,
+    `Return format (exactly):`,
+    '```js',
+    '// your code ...',
+    'module.exports = { solve, sampleTests };',
+    '```'
   ].filter(Boolean).join('\n');
 
   const content = await callOpenRouterChat(
     [
       { role: 'system', content: system },
-      { role: 'user', content: user }
+      { role: 'user', content: user },
     ],
     MODEL_A,
     { temperature: 0.2 }
   );
 
-  // 粗略提取代码（如果模型给了解释文本）
-  const match = content.match(/```(?:js|javascript)?\s*([\s\S]*?)```/i);
-  const code = match ? match[1].trim() : content.trim();
-
-  return { code, notes: input.feedback ? `Applied feedback from previous step.` : undefined };
+  const m = content.match(/```(?:js|javascript)?\s*([\s\S]*?)```/i);
+  const code = (m ? m[1] : content).trim();
+  return { code, notes: input.feedback ? 'Applied feedback.' : undefined };
 }
+
 
 /** ============ Agent B：代码审查（接 LLM，要求 JSON） ============ */
 export async function agentBReview(input: AgentBReviewInput): Promise<AgentBReview> {
@@ -117,22 +124,34 @@ Return ONLY the JSON object, no extra text.`;
 }
 
 /** ============ Agent C：执行代码（已修复 CommonJS 注入） ============ */
+// 替换原有 agentCExecute
 export async function agentCExecute(input: AgentCExecInput): Promise<AgentCExecResult> {
   try {
-    // ⚠️ DEMO：仅为演示。生产请使用安全沙箱（VM/Docker/Firecracker）+ 超时/资源限制。
+    // Demo 执行：生产建议用 VM/Docker 沙箱
     const module = { exports: {} as any };
     const exports = module.exports;
     const fn = new Function('module', 'exports', `${input.code}; return module.exports;`);
     const mod = fn(module, exports);
 
-    // 这里假设任务是“素数函数”，也可以根据 input.task 动态构造测试
-    if (typeof mod.isPrime !== 'function') {
-      return { success: false, error: 'Missing export: isPrime()' };
+    if (typeof mod.solve !== 'function') {
+      return { success: false, error: 'Missing export: solve(input)' };
+    }
+    if (!Array.isArray(mod.sampleTests) || mod.sampleTests.length === 0) {
+      return { success: false, error: 'Missing export: sampleTests (non-empty array)' };
     }
 
-    const sample = [2, 3, 4, 17, 18, 19];
-    const results = sample.map(n => `${n}:${mod.isPrime(n)}`);
-    return { success: true, output: results.join(', ') };
+    const lines: string[] = [];
+    let fails = 0;
+    for (let i = 0; i < mod.sampleTests.length; i++) {
+      const { input: tin, expected } = mod.sampleTests[i];
+      const got = await mod.solve(tin);
+      const ok = JSON.stringify(got) === JSON.stringify(expected);
+      if (!ok) fails++;
+      lines.push(`#${i} ok=${ok}  input=${JSON.stringify(tin)}  got=${JSON.stringify(got)}  expected=${JSON.stringify(expected)}`);
+    }
+
+    if (fails > 0) return { success: false, error: `Failed ${fails}/${mod.sampleTests.length}\n` + lines.join('\n') };
+    return { success: true, output: lines.join('\n') };
   } catch (e: any) {
     return { success: false, error: String(e?.stack || e) };
   }
