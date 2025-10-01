@@ -8,3 +8,5 @@ export const createActivities = (/* db: typeorm.DataSource */) => ({
     return `Hello, ${name}!`;
   },
 });
+
+// TEST
