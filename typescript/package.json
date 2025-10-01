@@ -7,15 +7,18 @@
     "worker": "node --loader ts-node/esm src/worker.ts",
     "start-wf": "node --loader ts-node/esm src/client.starter.ts",
     "approve": "node --loader ts-node/esm src/client.signal.ts approve",
-    "reject": "node --loader ts-node/esm src/client.signal.ts reject"
+    "reject": "node --loader ts-node/esm src/client.signal.ts reject",
+    "dashboard": "node --loader ts-node/esm src/web/server.ts"
   },
   "dependencies": {
     "@temporalio/client": "^1.9.0",
     "@temporalio/worker": "^1.9.0",
     "@temporalio/workflow": "^1.9.0",
-    "dotenv": "^17.2.3"
+    "dotenv": "^17.2.3",
+    "express": "^4.21.1"
   },
   "devDependencies": {
+    "@types/express": "^4.17.21",
     "ts-node": "^10.9.2",
     "typescript": "^5.5.4"
   }

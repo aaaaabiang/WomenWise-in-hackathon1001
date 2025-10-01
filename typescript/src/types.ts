@@ -41,3 +41,35 @@ export interface WorkflowInput {
   maxAttempts?: number;  // 全流程最大尝试次数（含执行失败后回退），默认 3
   taskQueue?: string;    // Worker 的任务队列名
 }
+
+export interface RoundSummary {
+  round: number;
+  code: string;
+  notes?: string;
+  review?: AgentBReview;
+}
+
+export interface HumanReviewLog {
+  decision: HumanDecision;
+  comment?: string;
+}
+
+export interface AttemptSummary {
+  attempt: number;
+  rounds: RoundSummary[];
+  humanReview?: HumanReviewLog;
+  execution?: AgentCExecResult;
+  state: 'drafting' | 'awaiting-human' | 'executing' | 'failed' | 'succeeded';
+  feedback?: string;
+}
+
+export interface WorkflowSnapshot {
+  workflowState: string;
+  task: string;
+  attempts: AttemptSummary[];
+  attemptsUsed: number;
+  maxAttempts: number;
+  maxRounds: number;
+  waitingForHuman: boolean;
+  lastFeedback?: string;
+}
