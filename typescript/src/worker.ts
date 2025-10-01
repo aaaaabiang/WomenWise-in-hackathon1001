@@ -1,32 +1,18 @@
-import { NativeConnection, Worker } from '@temporalio/worker';
-
-import { createActivities } from './activities';
-import { TASK_QUEUE_NAME } from './shared';
+import 'dotenv/config';
+import { Worker } from '@temporalio/worker';
+import * as activities from './activities.js';
 
 async function run() {
-  const connection = await NativeConnection.connect({
-    address: process.env.TEMPORAL_ADDRESS,
-    tls: process.env.TEMPORAL_TLS === 'true',
-    apiKey: process.env.TEMPORAL_API_KEY,
+  const taskQueue = process.env.TASK_QUEUE ?? 'agents-queue';
+
+  const worker = await Worker.create({
+    workflowsPath: new URL('./workflows.ts', import.meta.url).pathname, // ts-node/esm 会即时编译
+    activities,
+    taskQueue
   });
 
-  try {
-    // Create the worker with the task queue "hackathon"
-    const worker = await Worker.create({
-      connection,
-      namespace: process.env.TEMPORAL_NAMESPACE,
-      taskQueue: TASK_QUEUE_NAME,
-      // Workflows are registered using a path as they run in a separate JS context.
-      workflowsPath: require.resolve('./workflows'),
-      // Register the activities - you may need to inject dependencies in here
-      activities: createActivities(),
-    });
-
-    await worker.run();
-  } finally {
-    // Close the connection once the worker has stopped
-    await connection.close();
-  }
+  console.log(`[Worker] listening on taskQueue=${taskQueue}`);
+  await worker.run();
 }
 
 run().catch((err) => {
