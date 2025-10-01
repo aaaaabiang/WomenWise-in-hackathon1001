@@ -109,6 +109,40 @@
       font-weight: 600;
       margin-top: 8px;
     }
+    .review-layout {
+      display: flex;
+      gap: 20px;
+      align-items: stretch;
+    }
+    .review-layout section {
+      margin-bottom: 0;
+      flex: 1;
+    }
+    .history-section {
+      flex: 1.15;
+      display: flex;
+      flex-direction: column;
+    }
+    #attempts {
+      margin-top: 12px;
+      overflow-y: auto;
+      max-height: calc(100vh - 260px);
+      padding-right: 6px;
+    }
+    .human-section {
+      flex: 0.85;
+    }
+    @media (max-width: 900px) {
+      .review-layout {
+        flex-direction: column;
+      }
+      .review-layout section {
+        margin-bottom: 20px;
+      }
+      #attempts {
+        max-height: none;
+      }
+    }
     @media (prefers-color-scheme: dark) {
       :root { background: #0f172a; color: #e2e8f0; }
       section { background: #1f2937; box-shadow: none; border: 1px solid #334155; }
@@ -122,6 +156,17 @@
 <body>
   <main>
     <h1>Temporal Agents Dashboard</h1>
+
+    <section>
+      <form id="task-form">
+        <label for="task-input">Task Prompt for Agent A</label>
+        <textarea id="task-input" placeholder="Describe the coding task for Agent A" required></textarea>
+        <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button type="submit" class="secondary">Start New Task</button>
+        </div>
+        <div id="task-status" style="margin-top: 12px; font-size: 14px;"></div>
+      </form>
+    </section>
 
     <section>
       <form id="workflow-form">
@@ -139,6 +184,10 @@
     <section>
       <h2>Current Status</h2>
       <div id="status-grid">
+        <div class="status-card">
+          <div class="badge">Task</div>
+          <div id="current-task">—</div>
+        </div>
         <div class="status-card">
           <div class="badge">Workflow State</div>
           <div id="workflow-state">—</div>
@@ -159,21 +208,23 @@
       <p style="margin-top: 12px; font-size: 14px; color: #475569;" id="feedback"></p>
     </section>
 
-    <section>
-      <h2>Human Review</h2>
-      <p>When the workflow is waiting on a human decision you can send a signal here.</p>
-      <textarea id="comment" placeholder="Optional: comments or change requests"></textarea>
-      <div style="margin-top: 12px;">
-        <button id="approve-btn" class="approve" type="button">Approve</button>
-        <button id="reject-btn" class="reject" type="button">Reject</button>
-      </div>
-      <div id="decision-status" style="margin-top: 12px; font-size: 14px;"></div>
-    </section>
+    <div class="review-layout">
+      <section class="history-section">
+        <h2>Collaboration History</h2>
+        <div id="attempts"></div>
+      </section>
 
-    <section>
-      <h2>Collaboration History</h2>
-      <div id="attempts"></div>
-    </section>
+      <section class="human-section">
+        <h2>Human Review</h2>
+        <p>When the workflow is waiting on a human decision you can send a signal here.</p>
+        <textarea id="comment" placeholder="Optional: comments or change requests"></textarea>
+        <div style="margin-top: 12px;">
+          <button id="approve-btn" class="approve" type="button">Approve</button>
+          <button id="reject-btn" class="reject" type="button">Reject</button>
+        </div>
+        <div id="decision-status" style="margin-top: 12px; font-size: 14px;"></div>
+      </section>
+    </div>
   </main>
 
   <script>
@@ -192,6 +243,10 @@
     const approveBtn = document.getElementById('approve-btn');
     const rejectBtn = document.getElementById('reject-btn');
     const commentEl = document.getElementById('comment');
+    const taskForm = document.getElementById('task-form');
+    const taskInput = document.getElementById('task-input');
+    const taskStatusEl = document.getElementById('task-status');
+    const currentTaskEl = document.getElementById('current-task');
 
     let pollingTimer = null;
     let currentWorkflowId = '';
@@ -259,6 +314,7 @@
       remainingEl.textContent = `${Math.max(snapshot.maxAttempts - snapshot.attemptsUsed, 0)}`;
       waitingEl.textContent = snapshot.waitingForHuman ? 'Yes' : 'No';
       feedbackEl.textContent = snapshot.lastFeedback ? `Latest feedback: ${snapshot.lastFeedback}` : '';
+      currentTaskEl.textContent = snapshot.task || '—';
 
       if (!snapshot.attempts.length) {
         attemptsEl.innerHTML = `<p class="empty-state">No records yet — waiting for Agent A to produce code...</p>`;
@@ -283,6 +339,36 @@
       formErrorEl.hidden = true;
       if (pollingTimer) clearTimeout(pollingTimer);
       fetchSnapshot(true);
+    });
+
+    taskForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const taskText = taskInput.value.trim();
+      if (!taskText) {
+        taskStatusEl.textContent = 'Provide a task description first';
+        return;
+      }
+      taskStatusEl.textContent = 'Starting workflow...';
+      try {
+        const res = await fetch('/api/workflows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: taskText })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data?.message || 'Failed to start workflow');
+        }
+        taskStatusEl.textContent = `Workflow started: ${data.workflowId}`;
+        taskInput.value = '';
+        workflowIdInput.value = data.workflowId;
+        currentWorkflowId = data.workflowId;
+        if (pollingTimer) clearTimeout(pollingTimer);
+        fetchSnapshot(true);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        taskStatusEl.textContent = '⚠️ ' + message;
+      }
     });
 
     stopBtn.addEventListener('click', () => {
