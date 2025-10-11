@@ -1,23 +1,16 @@
-# 🧠 Introduction
+# 🧠 Overview
 Our project tackled one of the biggest pain points in AI-assisted development: unreliable, unverified code generation. 
-We built a multi-agent workflow—powered by Temporal—that orchestrates code generation, review, human-in-the-loop confirmation, and safe execution to make AI-generated code more trustworthy, structured, and fault-tolerant.
+We built a multi-agent workflow—powered by Temporal—that orchestrates code generation, review, human-in-the-loop confirmation, and safe execution to make AI-generated code more **trustworthy, structured, and fault-tolerant**.
 
 🏆 **2nd Prize Winner – AI-Assisted Workflow Coding Hackathon**  
 👩‍💻 *First-time hackathon participants building a collaborative AI workflow for reliable code generation.*
 
 ## WomenWise team member:
-Liyuan Sun
-Qing Gu
-Huijie Wang
-Yiyan He  
-Zhaoxia Quan
-
-
-## 🚀 Overview
-
-This is a prototype of a **multi-agent orchestration system** for automating and validating AI-generated code.  
-It integrates **LLM-based generation, review, execution, and human feedback**, offering a **fault-tolerant, trustworthy pipeline** for AI-assisted development.
-
+- Liyuan Sun @aaaaabiang
+- Qing Gu
+- Huijie Wang
+- Yiyan He  
+- Zhaoxia Quan
 
 
 ## 💡 Core Value
