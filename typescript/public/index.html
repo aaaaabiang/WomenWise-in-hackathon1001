@@ -1,0 +1,460 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Temporal Agents Dashboard</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Segoe UI", sans-serif;
+      background: #f4f6fb;
+      color: #222;
+    }
+    body { margin: 0; padding: 0; }
+    main {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 32px 24px 80px;
+    }
+    h1 { margin-top: 0; font-size: 28px; }
+    section {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 6px 18px rgba(15, 23, 42, 0.07);
+    }
+    label { display: block; margin-bottom: 8px; font-weight: 600; }
+    input[type="text"] {
+      width: 100%;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5f5;
+      font-size: 15px;
+    }
+    button {
+      cursor: pointer;
+      padding: 10px 18px;
+      border-radius: 8px;
+      border: none;
+      margin-right: 12px;
+      font-size: 15px;
+      font-weight: 600;
+      transition: transform 0.1s ease;
+    }
+    button:hover { transform: translateY(-1px); }
+    button.approve { background: #22c55e; color: #fff; }
+    button.reject { background: #f97316; color: #fff; }
+    button.secondary { background: #e2e8f0; color: #1e293b; }
+    #status-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 16px;
+    }
+    .status-card {
+      padding: 16px;
+      border-radius: 10px;
+      background: #eef2ff;
+      border: 1px solid #c7d2fe;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      background: #e0e7ff;
+      color: #3730a3;
+      margin-right: 8px;
+    }
+    pre {
+      background: #0f172a;
+      color: #f8fafc;
+      padding: 12px;
+      border-radius: 8px;
+      overflow-x: auto;
+      font-size: 13px;
+      line-height: 1.45;
+    }
+    .attempt {
+      border-left: 4px solid #4f46e5;
+      padding-left: 16px;
+      margin-bottom: 22px;
+    }
+    .round {
+      margin: 12px 0 18px;
+      padding: 12px;
+      background: #f8fafc;
+      border-radius: 8px;
+      border: 1px solid #e2e8f0;
+    }
+    details.code-block {
+      margin-top: 8px;
+      border: 1px solid #cbd5f5;
+      border-radius: 6px;
+      background: #fff;
+      overflow: hidden;
+    }
+    details.code-block summary {
+      cursor: pointer;
+      padding: 8px 12px;
+      font-weight: 600;
+      list-style: none;
+    }
+    details.code-block[open] summary {
+      border-bottom: 1px solid #cbd5f5;
+    }
+    details.code-block summary::-webkit-details-marker {
+      display: none;
+    }
+    details.code-block summary::after {
+      content: '\25BC';
+      float: right;
+      transition: transform 0.2s ease;
+    }
+    details.code-block[open] summary::after {
+      transform: rotate(-180deg);
+    }
+    details.code-block pre {
+      margin: 0;
+      border-radius: 0;
+    }
+    details.code-block pre code {
+      display: block;
+      max-height: 320px;
+      overflow-y: auto;
+    }
+    .empty-state {
+      text-align: center;
+      color: #64748b;
+      font-size: 15px;
+    }
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #cbd5f5;
+      font-size: 14px;
+      resize: vertical;
+    }
+    .error {
+      color: #dc2626;
+      font-weight: 600;
+      margin-top: 8px;
+    }
+    .review-layout {
+      display: grid;
+      grid-template-columns: minmax(0, 3fr) minmax(260px, 1.4fr);
+      gap: 20px;
+      align-items: flex-start;
+    }
+    .history-section {
+      display: flex;
+      flex-direction: column;
+      min-height: 0;
+    }
+    #attempts {
+      margin-top: 12px;
+      overflow-y: auto;
+      max-height: calc(100vh - 280px);
+      padding-right: 6px;
+      min-height: 200px;
+    }
+    .human-section {
+      position: sticky;
+      top: 32px;
+      align-self: start;
+    }
+    @media (max-width: 900px) {
+      .review-layout {
+        display: flex;
+        flex-direction: column;
+      }
+      #attempts {
+        max-height: none;
+      }
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { background: #0f172a; color: #e2e8f0; }
+      section { background: #1f2937; box-shadow: none; border: 1px solid #334155; }
+      input[type="text"], textarea { background: #0f172a; color: inherit; border-color: #334155; }
+      .status-card { background: #1e3a8a; border-color: #312e81; color: #f1f5f9; }
+      .round { background: #111827; border-color: #1f2937; }
+      pre { background: #111827; color: #e2e8f0; }
+      details.code-block { background: #111827; border-color: #334155; }
+      details.code-block[open] summary { border-color: #334155; }
+      details.code-block pre code { max-height: 320px; }
+    }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🦸MISSION: IMPOSSIBLE🦸 Agent Dashboard</h1>
+
+    <section>
+      <form id="task-form">
+        <label for="task-input">Task Prompt for Agent A</label>
+        <textarea id="task-input" placeholder="Describe the coding task for Agent A" required></textarea>
+        <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button type="submit" class="secondary">Start New Task</button>
+        </div>
+        <div id="task-status" style="margin-top: 12px; font-size: 14px;"></div>
+      </form>
+    </section>
+
+    <section>
+      <form id="workflow-form">
+        <label for="workflow-id">Workflow ID (copy from client starter log)</label>
+        <input id="workflow-id" type="text" placeholder="e.g. code-cocreate-1695900000000" required />
+        <div style="margin-top: 12px; display: flex; gap: 12px; flex-wrap: wrap;">
+          <button type="submit" class="secondary">Start Watching</button>
+          <button id="stop-btn" type="button" class="secondary">Stop</button>
+          <button id="refresh-btn" type="button" class="secondary">Refresh Now</button>
+        </div>
+      </form>
+      <div id="form-error" class="error" hidden></div>
+    </section>
+
+    <section>
+      <h2>Current Status</h2>
+      <div id="status-grid">
+        <div class="status-card">
+          <div class="badge">Task</div>
+          <div id="current-task">—</div>
+        </div>
+        <div class="status-card">
+          <div class="badge">Workflow State</div>
+          <div id="workflow-state">—</div>
+        </div>
+        <div class="status-card">
+          <div class="badge">Attempts</div>
+          <div id="attempts-used">0</div>
+        </div>
+        <div class="status-card">
+          <div class="badge">Attempts Remaining</div>
+          <div id="remaining">0</div>
+        </div>
+        <div class="status-card">
+          <div class="badge">Waiting for Human?</div>
+          <div id="waiting">No</div>
+        </div>
+      </div>
+      <p style="margin-top: 12px; font-size: 14px; color: #475569;" id="feedback"></p>
+    </section>
+
+    <div class="review-layout">
+      <section class="history-section">
+        <h2>Collaboration History</h2>
+        <div id="attempts"></div>
+      </section>
+
+      <section class="human-section">
+        <h2>Human Review</h2>
+        <p>When the workflow is waiting on a human decision you can send a signal here.</p>
+        <textarea id="comment" placeholder="Optional: comments or change requests"></textarea>
+        <div style="margin-top: 12px;">
+          <button id="approve-btn" class="approve" type="button">Approve</button>
+          <button id="reject-btn" class="reject" type="button">Reject</button>
+        </div>
+        <div id="decision-status" style="margin-top: 12px; font-size: 14px;"></div>
+      </section>
+    </div>
+  </main>
+
+  <script>
+    const workflowForm = document.getElementById('workflow-form');
+    const stopBtn = document.getElementById('stop-btn');
+    const refreshBtn = document.getElementById('refresh-btn');
+    const workflowStateEl = document.getElementById('workflow-state');
+    const attemptsUsedEl = document.getElementById('attempts-used');
+    const remainingEl = document.getElementById('remaining');
+    const waitingEl = document.getElementById('waiting');
+    const feedbackEl = document.getElementById('feedback');
+    const attemptsEl = document.getElementById('attempts');
+    const formErrorEl = document.getElementById('form-error');
+    const decisionStatusEl = document.getElementById('decision-status');
+    const workflowIdInput = document.getElementById('workflow-id');
+    const approveBtn = document.getElementById('approve-btn');
+    const rejectBtn = document.getElementById('reject-btn');
+    const commentEl = document.getElementById('comment');
+    const taskForm = document.getElementById('task-form');
+    const taskInput = document.getElementById('task-input');
+    const taskStatusEl = document.getElementById('task-status');
+    const currentTaskEl = document.getElementById('current-task');
+
+    let pollingTimer = null;
+    let currentWorkflowId = '';
+
+    function escapeHtml(str) {
+      return str
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function renderAttempt(attempt) {
+      const execution = attempt.execution
+        ? `<p><strong>Execution:</strong> ${attempt.execution.success ? '✅ Success' : '❌ Failed'}<br>${attempt.execution.output ? `<code>${escapeHtml(attempt.execution.output)}</code>` : ''}${attempt.execution.error ? `<code>${escapeHtml(attempt.execution.error)}</code>` : ''}</p>`
+        : '';
+      const human = attempt.humanReview
+        ? `<p><strong>Human Decision:</strong> ${attempt.humanReview.decision}${attempt.humanReview.comment ? ` — ${escapeHtml(attempt.humanReview.comment)}` : ''}</p>`
+        : '';
+      const rounds = attempt.rounds.map(round => `
+        <div class="round">
+          <p><strong>Round ${round.round}</strong></p>
+          <details class="code-block">
+            <summary>Agent A Code</summary>
+            <pre><code>${escapeHtml(round.code)}</code></pre>
+          </details>
+          ${round.review ? `<p><strong>Agent B Review:</strong> ${round.review.approved ? 'Approved ✅' : 'Rejected ❌'}</p>
+            ${round.review.reasons ? `<p>Reasons: ${escapeHtml(round.review.reasons)}</p>` : ''}
+            ${round.review.suggestions ? `<p>Suggestions: ${escapeHtml(round.review.suggestions)}</p>` : ''}` : ''}
+        </div>
+      `).join('');
+
+      return `
+        <div class="attempt">
+          <h3>Attempt #${attempt.attempt} — State: ${attempt.state}</h3>
+          ${attempt.feedback ? `<p><strong>Feedback:</strong> ${escapeHtml(attempt.feedback)}</p>` : ''}
+          ${rounds}
+          ${human}
+          ${execution}
+        </div>
+      `;
+    }
+
+    async function fetchSnapshot(immediate = false) {
+      if (!currentWorkflowId) return;
+      try {
+        const res = await fetch(`/api/workflows/${currentWorkflowId}`);
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message || 'Query failed');
+        renderSnapshot(data.data);
+        decisionStatusEl.textContent = '';
+        formErrorEl.hidden = true;
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        decisionStatusEl.textContent = '⚠️ ' + message;
+      } finally {
+        if (!immediate && currentWorkflowId) {
+          pollingTimer = setTimeout(fetchSnapshot, 4000);
+        }
+      }
+    }
+
+    function renderSnapshot(snapshot) {
+      workflowStateEl.textContent = snapshot.workflowState;
+      attemptsUsedEl.textContent = `${snapshot.attemptsUsed} / ${snapshot.maxAttempts}`;
+      remainingEl.textContent = `${Math.max(snapshot.maxAttempts - snapshot.attemptsUsed, 0)}`;
+      waitingEl.textContent = snapshot.waitingForHuman ? 'Yes' : 'No';
+      feedbackEl.textContent = snapshot.lastFeedback ? `Latest feedback: ${snapshot.lastFeedback}` : '';
+      currentTaskEl.textContent = snapshot.task || '—';
+
+      if (!snapshot.attempts.length) {
+        attemptsEl.innerHTML = `<p class="empty-state">No records yet — waiting for Agent A to produce code...</p>`;
+      } else {
+        attemptsEl.innerHTML = snapshot.attempts.map(renderAttempt).join('');
+      }
+
+      const disable = !snapshot.waitingForHuman;
+      approveBtn.disabled = disable;
+      rejectBtn.disabled = disable;
+    }
+
+    workflowForm.addEventListener('submit', (ev) => {
+      ev.preventDefault();
+      const id = workflowIdInput.value.trim();
+      if (!id) {
+        formErrorEl.textContent = 'Please enter a workflow ID';
+        formErrorEl.hidden = false;
+        return;
+      }
+      currentWorkflowId = id;
+      formErrorEl.hidden = true;
+      if (pollingTimer) clearTimeout(pollingTimer);
+      fetchSnapshot(true);
+    });
+
+    taskForm.addEventListener('submit', async (ev) => {
+      ev.preventDefault();
+      const taskText = taskInput.value.trim();
+      if (!taskText) {
+        taskStatusEl.textContent = 'Provide a task description first';
+        return;
+      }
+      taskStatusEl.textContent = 'Starting workflow...';
+      try {
+        const res = await fetch('/api/workflows', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ task: taskText })
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data?.message || 'Failed to start workflow');
+        }
+        taskStatusEl.textContent = `Workflow started: ${data.workflowId}`;
+        taskInput.value = '';
+        workflowIdInput.value = data.workflowId;
+        currentWorkflowId = data.workflowId;
+        if (pollingTimer) clearTimeout(pollingTimer);
+        fetchSnapshot(true);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        taskStatusEl.textContent = '⚠️ ' + message;
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      if (pollingTimer) {
+        clearTimeout(pollingTimer);
+        pollingTimer = null;
+      }
+      currentWorkflowId = '';
+      decisionStatusEl.textContent = 'Stopped watching';
+    });
+
+    refreshBtn.addEventListener('click', () => {
+      if (!currentWorkflowId) {
+        decisionStatusEl.textContent = 'Link a workflow ID first';
+        return;
+      }
+      if (pollingTimer) clearTimeout(pollingTimer);
+      fetchSnapshot(true);
+    });
+
+    async function sendDecision(decision) {
+      if (!currentWorkflowId) {
+        decisionStatusEl.textContent = 'Link a workflow ID first';
+        return;
+      }
+      const comment = commentEl.value.trim();
+      decisionStatusEl.textContent = 'Sending...';
+      try {
+        const res = await fetch(`/api/workflows/${currentWorkflowId}/decision`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ decision, comment }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.message || 'Failed to send');
+        decisionStatusEl.textContent = `✅ Sent ${decision} signal`;
+        commentEl.value = '';
+        if (pollingTimer) clearTimeout(pollingTimer);
+        fetchSnapshot(true);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        decisionStatusEl.textContent = '⚠️ ' + message;
+      }
+    }
+
+    approveBtn.addEventListener('click', () => sendDecision('approve'));
+    rejectBtn.addEventListener('click', () => sendDecision('reject'));
+  </script>
+</body>
+</html>
